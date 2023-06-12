@@ -1,0 +1,56 @@
+#!/usr/bin/env groovy
+// Copyright (C) 2023 Semper Victus
+// Copyright (C) 2023 GrapheneOS
+//
+// This program is free software; you can redistribute it and/or modify
+// in order to easy exprort images built to "external" world
+// it under the terms of the GNU General Public License version 2 or later as
+// published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+/* Special thanks to the VyOS team for Jenkins pipeline code & methodology */
+
+pipeline {
+    agent none
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 240, unit: 'MINUTES')
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+    stages {
+        stage('Build container') {
+            when {
+                beforeOptions true
+                beforeAgent true
+                // Only build image on user request or changes to relevant files
+                anyOf {
+                    changeset pattern: "**/Dockerfile"
+                    changeset pattern: "**/entrypoint.bash"
+                    changeset pattern: "**/Jenkinsfile.docker"
+                    triggeredBy cause: "UserIdCause"
+                }
+            }
+            parallel {
+                stage('x86_64') {
+                    agent {
+                        label "Docker"
+                    }
+                    steps {
+                        script {
+                            DOCKER_IMAGE_AMD64 = "grapheneos/gos-reproducibility"
+                            sh "docker build --no-cache --tag ${DOCKER_IMAGE_AMD64} ."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
