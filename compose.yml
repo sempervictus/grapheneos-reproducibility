@@ -1,0 +1,17 @@
+services:
+  grapheneos-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grapheneos-builder
+    privileged: true
+    # These are the bare minimum to build GrapheneOS
+    environment:
+      - DEVICES_TO_BUILD="redfin oriole lynx"
+      - BUILD_TARGET=stable
+      - OFFICIAL_BUILD=true
+      - NPROC_SYNC=8
+      - NPROC_BUILD=8
+    volumes:
+      - ./grapheneos-tree/:/opt/build/grapheneos
+      - ./local_manifests:/.repo/local_manifests:ro
