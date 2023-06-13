@@ -9,9 +9,12 @@ services:
     environment:
       - DEVICES_TO_BUILD="redfin oriole lynx"
       - BUILD_TARGET=stable
+      - USE_PREBUILT_KERNEL=false
+      - PACKAGE_OS=true
       - OFFICIAL_BUILD=true
       - NPROC_SYNC=8
       - NPROC_BUILD=8
     volumes:
       - ./grapheneos-tree/:/opt/build/grapheneos
       - ./local_manifests:/.repo/local_manifests:ro
+      - ./keys:/opt/build/grapheneos/build:ro

@@ -43,6 +43,9 @@ check_breaking_env () {
     elif [ "$OFFICIAL_BUILD" = "true" ] && [ -d ".repo/local_manifests" ]; then
         echo "Official builds do not use custom manifests. Please remove your bind mount and retry."
         exit 1
+    elif [ "$PACKAGE_OS" = "true" ] && ! [ -d "/opt/build/grapheneos/keys" ]; then
+        echo "Packaging the OS requires signed keys to be available. Check your bind mount and retry."
+        exit 1
     fi
 }
 
@@ -82,13 +85,18 @@ compile_os () {
                 ;;
         esac
     else
-        repo init -u https://github.com/GrapheneOS/platform_manifest.git -b "refs/tags/$MANIFEST"
+        repo init -u https://github.com/GrapheneOS/platform_manifest.git -b refs/tags/$MANIFEST
         mkdir -p ~/.ssh && curl https://grapheneos.org/allowed_signers > ~/.ssh/grapheneos_allowed_signers
         (cd .repo/manifests && git config gpg.ssh.allowedSignersFile ~/.ssh/grapheneos_allowed_signers && git verify-tag "$(git describe)")
     fi
 
     echo "[INFO] Syncing GrapheneOS tree"
     repo sync -j${NPROC_SYNC}
+
+    if [ "$USE_PREBUILT_KERNEL" = "false" ]; then
+        echo "[INFO] Building Kernel for ${DEVICE}"
+        build_kernel $DEVICE
+    fi
 
     echo "[INFO] Setting up adevtool"
     yarn install --cwd vendor/adevtool/
@@ -105,7 +113,9 @@ compile_os () {
 
     echo "[INFO] Building OS"
     source script/envsetup.sh
+    # We are not going to support eng or userdebug builds
     choosecombo release $DEVICE user
+    # At this point, the environment variables BUILD_DATETIME and BUILD_NUMBER are pulled when OFFICIAL_BUILD is true
     if [ "$DEVICE" = "oriole" || "$DEVICE" = "raven" || "$DEVICE" = "bluejay" ]; then
         m vendorbootimage target-files-package otatools-package -j${NPROC_BUILD}
     elif [ "$DEVICE" = "panther" || "$DEVICE" = "cheetah" || "$DEVICE" = "lynx" ]; then
@@ -114,6 +124,88 @@ compile_os () {
          m target-files-package otatools-package -j${NPROC_BUILD}
     fi
     echo "[INFO] OS built"
+}
+
+build_kernel () {
+    DEVICE=$1
+
+    case $DEVICE in
+        coral)
+            mkdir -p android/kernel/coral
+            cd android/kernel/coral
+            repo init -u https://github.com/GrapheneOS/kernel_manifest-coral.git -b 13
+            repo sync -j${NPROC_SYNC}
+            KBUILD_BUILD_VERSION=1 KBUILD_BUILD_USER=build-user KBUILD_BUILD_HOST=build-host KBUILD_BUILD_TIMESTAMP="Thu 01 Jan 1970 12:00:00 AM UTC" BUILD_CONFIG=private/msm-google/build.config.floral build/build.sh
+            rsync -av --delete out/android-msm-pixel-4.14/dist/ device/google/coral-kernel/
+            ;;
+        sunfish)
+            mkdir -p android/kernel/coral
+            cd android/kernel/coral
+            repo init -u https://github.com/GrapheneOS/kernel_manifest-coral.git -b 13
+            repo sync -j${NPROC_SYNC}
+            KBUILD_BUILD_VERSION=1 KBUILD_BUILD_USER=build-user KBUILD_BUILD_HOST=build-host KBUILD_BUILD_TIMESTAMP="Thu 01 Jan 1970 12:00:00 AM UTC" BUILD_CONFIG=private/msm-google/build.config.sunfish build/build.sh
+            rsync -av --delete out/android-msm-pixel-4.14/dist/ device/google/sunfish-kernel/
+            ;;
+        bramble|redfin|barbet)
+            mkdir -p android/kernel/redbull
+            cd android/kernel/redbull
+            repo init -u https://github.com/GrapheneOS/kernel_manifest-redbull.git -b 13
+            repo sync -j${NPROC_SYNC}
+            BUILD_CONFIG=private/msm-google/build.config.redbull.vintf build/build.sh
+            rsync -av --delete out/android-msm-pixel-4.19/dist/ device/google/redbull-kernel/vintf/
+            ;;
+        oriole|raven)
+            mkdir -p android/kernel/raviole
+            cd android/kernel/raviole
+            repo init -u https://github.com/GrapheneOS/kernel_manifest-raviole.git -b 13
+            repo sync -j${NPROC_SYNC}
+            LTO=full BUILD_AOSP_KERNEL=1 ./build_slider.sh
+            rsync -av --delete out/mixed/dist/ device/google/raviole-kernel/
+            ;;
+        bluejay)
+            mkdir -p android/kernel/bluejay
+            cd android/kernel/bluejay
+            repo init -u https://github.com/GrapheneOS/kernel_manifest-bluejay.git -b 13
+            repo sync -j${NPROC_SYNC}
+            LTO=full BUILD_AOSP_KERNEL=1 ./build_bluejay.sh
+            rsync -av --delete out/mixed/dist/ device/google/bluejay-kernel/
+            ;;
+        panther|cheetah)
+            mkdir -p android/kernel/pantah
+            cd android/kernel/pantah
+            repo init -u https://github.com/GrapheneOS/kernel_manifest-pantah.git -b 13
+            repo sync -j${NPROC_SYNC}
+            LTO=full BUILD_AOSP_KERNEL=1 ./build_cloudripper.sh
+            rsync -av --delete out/mixed/dist/ device/google/pantah-kernel/
+            ;;
+        lynx)
+            mkdir -p android/kernel/lynx
+            cd android/kernel/lynx
+            repo init -u https://github.com/GrapheneOS/kernel_manifest-lynx.git -b 13-lynx
+            repo sync -j${NPROC_SYNC}
+            LTO=full BUILD_AOSP_KERNEL=1 ./build_lynx.sh
+            rsync -av --delete out/mixed/dist/ device/google/lynx-kernel/
+            ;;
+    esac
+}
+
+# build_vanadium () {
+#     git clone https://github.com/GrapheneOS/Vanadium.git
+#     cd Vanadium
+#     git checkout CORRECT_BRANCH_OR_TAG
+# }
+
+# verify_os() {
+#
+# }
+
+package_os () {
+    DEVICE=$1
+    # https://github.com/GrapheneOS/platform_development.git 
+    # Currently, the plan is to include your own made keys. This is here just in case we decide to do this on the fly which will definitely not be recommended at all.
+
+    # Packaging also signs the OS as well. 
+    script/release.sh $DEVICE
 }
 
 check_breaking_env
@@ -131,4 +223,8 @@ for ((i = 0; i < ${#device_array[@]}; i++)); do
             compile_os "${device_array[i]}" "$BUILD_ID" "${manifest_array[i]}"
             ;;
     esac
+
+    if [ "$PACKAGE_OS" = "true" ]; then
+        package_os "${device_array[i]}"
+    fi
 done
