@@ -16,7 +16,6 @@ RUN pacman -U /tmp/aur/ncurses5-compat-libs/ncurses5-compat-libs-* --noconfirm &
     usermod -a -G wheel builduser && \
     echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/nopass
 
-COPY .gitconfig /home/builduser/.gitconfig
 COPY entrypoint.bash /usr/local/bin/build-entrypoint.bash
 USER builduser
 
@@ -25,13 +24,25 @@ USER builduser
 # Kernels to build: coral, oriole  etc.
 # Apps to build: Auditor, Apps, etc.
 
-ENV DEVICES_TO_BUILD=redfin,oriole,bluejay \
-    BUILD_TARGET=stable \
-    KERNELS_TO_BUILD=none \
-    APPS_TO_BUILD=none \
-    SKIP_GRAPHENEOS=false \
-    BUILD_VANADIUM=false \
-    OFFICIAL_BUILD=true
+# Build target disregards BUILD_NUMBER, BUILD_DATETIME, BUILD_ID, BUILD_BRANCH as it's more for one offs
 
-WORKDIR /opt/build/
+ENV DEVICES_TO_BUILD="redfin oriole lynx" \
+    # MANIFESTS_FOR_BUILD="TQ2A.230505.002.2023060700 TQ2A.230505.002.2023060700 TQ2B.230505.005.A1.2023060700" \
+    # BUILD_TARGET=stable \ 
+    BUILD_NUMBER=2023060700 \ 
+    BUILD_DATETIME=1686159583 \ 
+    BUILD_ID=TQ2A.230505.002 \ 
+    USE_PREBUILT_KERNEL=false \
+    USE_PREBUILT_APPS=false \
+    PACKAGE_OS=false \
+    APPS_TO_BUILD=all \
+    # SKIP_GRAPHENEOS=false \
+    # BUILD_VANADIUM=false \
+    OFFICIAL_BUILD=true \
+    NPROC_SYNC=8 \
+    NPROC_BUILD=8 \
+    GIT_USERNAME=grapheneos \ 
+    GIT_EMAILADDRESS=grapheneos-build@localhost
+
+WORKDIR /opt/build/grapheneos
 ENTRYPOINT ["/usr/local/bin/build-entrypoint.bash"]
