@@ -22,14 +22,6 @@ BUILD_VANADIUM="${BUILD_VANADIUM:-false}"
 GIT_USERNAME="${GIT_USERNAME:-grapheneos}"
 GIT_EMAILADDRESS="${GIT_EMAILADDRESS:-grapheneos-build@localhost}"
 
-# If we set the keys or local_manifest directly into the build directory, repo doesn't have permissions to do its thing.
-# We will do it outside of the directory and copy them into the build environment.
-
-# This, in theory, means you don't have to wait for the build to process and complete and it allows you store your keys elsewhere while the build compiles.
-if [ -d "/keys" ]; then
-    sudo cp -r /keys /opt/build/grapheneos/keys
-fi
-
 # Configure Git user name and email and gitcookies
 git config --global user.name "$GIT_USERNAME"
 git config --global user.email "$GIT_EMAILADDRESS"
@@ -54,7 +46,7 @@ check_breaking_env() {
                 exit 1
             fi
         else
-            # If this is a combination of build method one or three...
+            # If this is a combination of build method one and three...
             if [[ ! -z $BUILD_NUMBER || ! -z $BUILD_DATETIME || ! -z $BUILD_ID ]]; then
                 echo "You have specified a BUILD_NUMBER, BUILD_DATETIME, and BUILD_ID as well as a BUILD_TARGET. BUILD_TARGET is for one-off builds of the latest builds and development builds directly from git."
                 exit 1
@@ -97,8 +89,8 @@ check_breaking_env() {
 
     # For any potential application in APPS_TO_BUILD, check to see if they are acceptable values.
     for app in "${apps_array[@]}"; do
-        if [[ $app != "Auditor" && $app != "Apps" && $app != "Camera" && $app != "PdfViewer" && $app != "talkback" && $app != "GmsCompat" && $app != "all" ]]; then
-            echo "$app is not a valid application. The only valid applications are: Auditor, Apps, Camera, PdfViewer, talkback, GmsCompat. You can also set it to 'all' and it will build all the applications."
+        if [[ $app != "Auditor" && $app != "Apps" && $app != "Camera" && $app != "PdfViewer" && $app != "TalkBack" && $app != "GmsCompat" && $app != "all" ]]; then
+            echo "$app is not a valid application. The only valid applications are: Auditor, Apps, Camera, PdfViewer, TalkBack, GmsCompat. You can also set it to 'all' and it will build all the applications."
             exit 1
         fi
     done
@@ -133,6 +125,9 @@ repo_init_and_sync () {
     local MANIFEST=$3
 
     echo "[INFO] Downloading and verifying manifest"
+    mkdir -p /opt/build/grapheneos/
+    cd /opt/build/grapheneos/
+
     if [ "$MANIFEST" = "development" ]; then
         case $DEVICE in
             oriole|raven|bluejay|panther|cheetah|lynx)
@@ -152,6 +147,10 @@ repo_init_and_sync () {
     # We will do it outside of the directory and copy them into the build environment.
     if [[ -d "/local_manifests" ]]; then
         sudo cp -r /local_manifests /opt/build/grapheneos/.repo/local_manifests
+    fi
+
+    if [ -d "/keys" ]; then
+        sudo cp -r /keys /opt/build/grapheneos/keys
     fi
 
     echo "[INFO] Syncing GrapheneOS tree"
@@ -236,58 +235,58 @@ build_kernel () {
 
     case $DEVICE in
         coral|sunfish)
-            mkdir -p android/kernel/coral
-            cd android/kernel/coral
+            mkdir -p /opt/build/kernel/"${DEVICE}"
+            cd /opt/build/kernel/"${DEVICE}"
             repo init -u https://github.com/GrapheneOS/kernel_manifest-coral.git -b refs/tags/"${MANIFEST}"
             repo sync -j${NPROC_SYNC} --force-sync --no-clone-bundle --no-tags
 
             if [[ $DEVICE == "coral" ]]; then
                 KBUILD_BUILD_VERSION=1 KBUILD_BUILD_USER=build-user KBUILD_BUILD_HOST=build-host KBUILD_BUILD_TIMESTAMP="Thu 01 Jan 1970 12:00:00 AM UTC" BUILD_CONFIG=private/msm-google/build.config.floral build/build.sh
-                rsync -av --delete --remove-source-files  out/android-msm-pixel-4.14/dist/ device/google/coral-kernel/
+                rsync -av --delete out/android-msm-pixel-4.14/dist/ /opt/build/grapheneos/device/google/coral-kernel/
             else
                 KBUILD_BUILD_VERSION=1 KBUILD_BUILD_USER=build-user KBUILD_BUILD_HOST=build-host KBUILD_BUILD_TIMESTAMP="Thu 01 Jan 1970 12:00:00 AM UTC" BUILD_CONFIG=private/msm-google/build.config.sunfish build/build.sh
-                rsync -av --delete --remove-source-files  out/android-msm-pixel-4.14/dist/ device/google/sunfish-kernel/
+                rsync -av --delete out/android-msm-pixel-4.14/dist/ /opt/build/grapheneos/device/google/sunfish-kernel/
             fi
             ;;
         bramble|redfin|barbet)
-            mkdir -p android/kernel/redbull
-            cd android/kernel/redbull
+            mkdir -p /opt/build/kernel/"${DEVICE}"
+            cd /opt/build/kernel/"${DEVICE}"
             repo init -u https://github.com/GrapheneOS/kernel_manifest-redbull.git -b refs/tags/"${MANIFEST}"
             repo sync -j${NPROC_SYNC} --force-sync --no-clone-bundle --no-tags
             BUILD_CONFIG=private/msm-google/build.config.redbull.vintf build/build.sh
-            rsync -av --delete --remove-source-files  out/android-msm-pixel-4.19/dist/ device/google/redbull-kernel/vintf/
+            rsync -av --delete out/android-msm-pixel-4.19/dist/ /opt/build/grapheneos/device/google/redbull-kernel/vintf/
             ;;
         oriole|raven)
-            mkdir -p android/kernel/raviole
-            cd android/kernel/raviole
+            mkdir -p /opt/build/kernel/"${DEVICE}"
+            cd /opt/build/kernel/"${DEVICE}"
             repo init -u https://github.com/GrapheneOS/kernel_manifest-raviole.git -b refs/tags/"${MANIFEST}"
             repo sync -j${NPROC_SYNC} --force-sync --no-clone-bundle --no-tags
             LTO=full BUILD_AOSP_KERNEL=1 ./build_slider.sh
-            rsync -av --delete --remove-source-files  out/mixed/dist/ device/google/raviole-kernel/
+            rsync -av --delete out/mixed/dist/ /opt/build/grapheneos/device/google/raviole-kernel/
             ;;
         bluejay)
-            mkdir -p android/kernel/bluejay
-            cd android/kernel/bluejay
+            mkdir -p /opt/build/kernel/"${DEVICE}"
+            cd /opt/build/kernel/"${DEVICE}"
             repo init -u https://github.com/GrapheneOS/kernel_manifest-bluejay.git -b refs/tags/"${MANIFEST}"
             repo sync -j${NPROC_SYNC} --force-sync --no-clone-bundle --no-tags
             LTO=full BUILD_AOSP_KERNEL=1 ./build_bluejay.sh
-            rsync -av --delete --remove-source-files  out/mixed/dist/ device/google/bluejay-kernel/
+            rsync -av --delete out/mixed/dist/ /opt/build/grapheneos/device/google/bluejay-kernel/
             ;;
         panther|cheetah)
-            mkdir -p android/kernel/pantah
-            cd android/kernel/pantah
+            mkdir -p /opt/build/kernel/"${DEVICE}"
+            cd /opt/build/kernel/"${DEVICE}"
             repo init -u https://github.com/GrapheneOS/kernel_manifest-pantah.git -b refs/tags/"${MANIFEST}"
             repo sync -j${NPROC_SYNC} --force-sync --no-clone-bundle --no-tags
             LTO=full BUILD_AOSP_KERNEL=1 ./build_cloudripper.sh
-            rsync -av --delete --remove-source-files  out/mixed/dist/ device/google/pantah-kernel/
+            rsync -av --delete out/mixed/dist/ /opt/build/grapheneos/device/google/pantah-kernel/
             ;;
         lynx)
-            mkdir -p android/kernel/lynx
-            cd android/kernel/lynx
+            mkdir -p /opt/build/kernel/"${DEVICE}"
+            cd /opt/build/kernel/"${DEVICE}"
             repo init -u https://github.com/GrapheneOS/kernel_manifest-lynx.git -b refs/tags/"${MANIFEST}"
             repo sync -j${NPROC_SYNC} --force-sync --no-clone-bundle --no-tags
             LTO=full BUILD_AOSP_KERNEL=1 ./build_lynx.sh
-            rsync -av --delete --remove-source-files  out/mixed/dist/ device/google/lynx-kernel/
+            rsync -av --delete out/mixed/dist/ /opt/build/grapheneos/device/google/lynx-kernel/
             ;;
     esac
 }
@@ -364,11 +363,18 @@ build_applications () {
     if [ "$APPS_TO_BUILD" != "all" ]; then
         IFS=" " read -r -a apps_array <<< "$APPS_TO_BUILD"
     else
-        apps_array=("Auditor" "Apps" "Camera" "PdfViewer" "talkback" "GmsCompat")
+        apps_array=("Auditor" "Apps" "Camera" "PdfViewer" "TalkBack" "GmsCompat")
     fi
 
     for APP in "${apps_array[@]}"; do
-        VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}.apk" | grep -oP "versionCode='\K\d+")
+        if [ $APP != "GmsCompat" ]; then
+            VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}.apk" | grep -oP "versionCode='\K\d+")
+        else 
+            VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}Config.apk" | grep -oP "versionCode='\K\d+")
+        fi
+
+        mkdir -p /opt/build/apps/"${APP}"
+        cd /opt/build/apps/"${APP}"
 
         clone_repository() {
             local app_dir="$1"

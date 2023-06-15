@@ -19,5 +19,5 @@ RUN pacman -Syyuu --noconfirm repo python git gnupg diffutils freetype2 \
 COPY entrypoint.bash /usr/local/bin/build-entrypoint.bash
 USER builduser
 
-WORKDIR /opt/build/grapheneos
+WORKDIR /opt/build/
 ENTRYPOINT ["/usr/local/bin/build-entrypoint.bash"]
