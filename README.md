@@ -96,7 +96,7 @@ services:
 
 ### Manually defining a specific `BUILD_ID`, `BUILD_DATETIME`, and `BUILD_NUMBER` (HARD)
 
-Using `BUILD_ID`, `BUILD_DATETIME`, and `BUILD_NUMBER`, you can build a reproducible past build. The reason this is marked as hard is because you must supply each variable and for past builds, these are hard to come by as GrapheneOS does not publish previous builds. These would be found in the `ota-update.zip` file.
+Using `BUILD_ID`, `BUILD_DATETIME`, and `BUILD_NUMBER`, you can build a reproducible past build. The reason this is marked as hard is because you must supply each variable and for past builds, these are hard to come by as GrapheneOS does not publish previous builds. These would be found in the `DEVICE-ota_update-BUILDNUMBER.zip` file.
 
 For `docker run`:
 
