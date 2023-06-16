@@ -1,7 +1,7 @@
 FROM archlinux:latest
 
 # Obtain all needed packages from Arch Linux repos
-RUN pacman -Syyuu --noconfirm repo python git gnupg diffutils freetype2 \ 
+RUN pacman -Syyuu --noconfirm repo python git gnupg diffutils freetype2 jdk17-openjdk \ 
     fontconfig ttf-dejavu openssl rsync unzip zip python-protobuf nodejs-lts-hydrogen \
     yarn gperf lib32-glibc lib32-gcc-libs signify openssh base-devel make cpio parallel && \
     # Create a non-root user and download a package from the AUR
