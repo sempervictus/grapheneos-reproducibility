@@ -63,7 +63,7 @@ check_breaking_env() {
     # If we are going for a reproducible build...
     elif [[ $OFFICIAL_BUILD == "true" ]]; then
         # If a local_manifest directory exists...
-        if [[ -d ".repo/local_manifests" ]]; then
+        if [[ -d "/local_manifests" ]]; then
             echo "Official builds do not use custom manifests. Please remove your bind mount and retry."
             exit 1
         fi
@@ -369,7 +369,7 @@ build_applications () {
                 git checkout tags/"$(git describe --tags --abbrev=0)"
             fi
         # If not, use the prebuilt APK's versionCode and checkout the tag related
-        else [[ ! -z "$MANIFESTS_FOR_BUILD" || ! -z "$BUILD_NUMBER" ]]; then
+        else
             if [ "$APP" = "GmsCompat" ]; then
                 VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}Config.apk" | grep -oP "versionCode='\K\d+")
                 git checkout tags/"${VERSION_CODE}"
