@@ -119,6 +119,37 @@ get_metadata () {
     export MANIFEST_FROM_METADATA="${BUILD_ID}.${BUILD_NUMBER}"
 }
 
+# Install the SDK
+install_android_sdk () {
+    mkdir -p "$HOME/android/sdk/bootstrap" "$HOME/android/sdk/licenses"
+    cd "$HOME/android/sdk/bootstrap"
+    curl -O https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+    echo 'bd1aa17c7ef10066949c88dc6c9c8d536be27f992a1f3b5a584f9bd2ba5646a0  commandlinetools-linux-9477386_latest.zip' | sha256sum -c
+    unzip commandlinetools-linux-9477386_latest.zip
+    # Get past annoying license prompt
+    echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$HOME/android/sdk/licenses/android-sdk-license"
+    cmdline-tools/bin/sdkmanager 'cmdline-tools;latest' --sdk_root="$HOME/android/sdk"
+    cd ..
+    rm -r bootstrap
+
+    export ANDROID_HOME="$HOME/android/sdk"
+    export PATH="$HOME/android/sdk/cmdline-tools/latest/bin:$PATH"
+
+    sdkmanager platform-tools
+
+    export PATH="$HOME/android/sdk/platform-tools:$PATH"
+
+    sdkmanager 'build-tools;33.0.2'
+
+    export PATH="$HOME/android/sdk/platform-tools:$PATH"
+
+    sdkmanager ndk-bundle
+
+    export PATH="$HOME/android/sdk/ndk-bundle:$PATH"
+
+    sdkmanager --update
+}
+
 repo_init_and_sync () {
     local DEVICE=$1
     local BUILD_ID=$2
@@ -149,6 +180,7 @@ repo_init_and_sync () {
         sudo cp -r /local_manifests /opt/build/grapheneos/.repo/local_manifests
     fi
 
+    # This, in theory, will allow you to take your keys once copied and encrypt them at rest.
     if [ -d "/keys" ]; then
         sudo cp -r /keys /opt/build/grapheneos/keys
     fi
@@ -212,6 +244,11 @@ compile_os () {
     if [ "$USE_PREBUILT_APPS" = "false" ]; then
         echo "[INFO] Building applications for ${DEVICE}"
         build_applications
+    fi
+
+    if [ "$BUILD_VANADIUM" = "true" ]; then
+        echo "[INFO] Building Vanadium"
+        build_vanadium $MANIFEST
     fi
 
     echo "[INFO] Building OS"
@@ -292,35 +329,10 @@ build_kernel () {
 }
 
 build_applications () {
-    # Install SDK
-
-    mkdir -p "$HOME/android/sdk/bootstrap" "$HOME/android/sdk/licenses"
-    cd "$HOME/android/sdk/bootstrap"
-    curl -O https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-    echo 'bd1aa17c7ef10066949c88dc6c9c8d536be27f992a1f3b5a584f9bd2ba5646a0  commandlinetools-linux-9477386_latest.zip' | sha256sum -c
-    unzip commandlinetools-linux-9477386_latest.zip
-    # Get past annoying license prompt
-    echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$HOME/android/sdk/licenses/android-sdk-license"
-    cmdline-tools/bin/sdkmanager 'cmdline-tools;latest' --sdk_root="$HOME/android/sdk"
-    cd ..
-    rm -r bootstrap
-
-    export ANDROID_HOME="$HOME/android/sdk"
-    export PATH="$HOME/android/sdk/cmdline-tools/latest/bin:$PATH"
-
-    sdkmanager platform-tools
-
-    export PATH="$HOME/android/sdk/platform-tools:$PATH"
-
-    sdkmanager 'build-tools;33.0.2'
-
-    export PATH="$HOME/android/sdk/platform-tools:$PATH"
-
-    sdkmanager ndk-bundle
-
-    export PATH="$HOME/android/sdk/ndk-bundle:$PATH"
-
-    sdkmanager --update
+    # If we don't detect the SDK installation
+    if [[ ! -d "$HOME/android/sdk" ]]
+        install_android_sdk
+    fi
 
     # Download and build the applications
     if [ "$APPS_TO_BUILD" != "all" ]; then
@@ -378,18 +390,31 @@ build_applications () {
 
         ./gradlew build
 
-        # TODO: export the built application to external/$APP/prebuilt/$APP.apk as well as a path outside of the build folder
+        # TODO: export the built application to external/$APP/prebuilt/$APP.apk
 
-        cd ..
+        cd /opt/build/grapheneos
     done
 }
 
 build_vanadium () {
+    MANIFEST=$1
+
+    # If we don't detect the SDK installation and if we have a set manifest
+    if [[ ! -d "$HOME/android/sdk" && $MANIFEST != "development" ]]; then
+        install_android_sdk
+        VERSION_CODE=$(aapt2 dump badging "external/vanadium/prebuilt/arm64/TrichromeChrome.apk" | grep -oP "versionName='\K\d+")
+    fi
+
     # Set build trees
     mkdir -p /opt/build/vanadium /opt/build/depot_tools /opt/build/chromium
 
     git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git /opt/build/depot_tools
     git clone https://github.com/GrapheneOS/Vanadium.git /opt/build/vanadium 
+
+    if [[ $MANIFEST != "development" ]]; then
+        cd /opt/build/vanadium
+        git checkout tags/"${VERSION_CODE}"
+    fi
 
     export PATH="$PATH:/opt/build/depot_tools"
 
@@ -398,12 +423,19 @@ build_vanadium () {
     cd src
     git fetch --tags
 
+    if [[ $MANIFEST != "development" ]]; then
+        git checkout tags/"${VERSION_CODE}"
+    fi
+
     git am --whitespace=nowarn --keep-non-patch /opt/build/vanadium/patches/*.patch
 
     gclient sync -D --with_branch_heads --with_tags --jobs 32
 
     gn args out/Default
 
+    chrt -b 0 ninja -C out/Default/ trichrome_webview_64_32_apk trichrome_chrome_64_32_apk trichrome_library_64_32_apk
+
+    ../generate-release.sh out
 }
 
 package_os () {

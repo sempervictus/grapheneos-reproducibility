@@ -14,7 +14,8 @@ RUN pacman -Syyuu --noconfirm repo python git gnupg diffutils freetype2 jdk17-op
     # Give our user sudo privileges
     usermod -a -G wheel builduser && \
     echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/nopass && \
-    mkdir -p /opt/build/grapheneos/ && chown -R builduser:builduser /opt/build/
+    # Create our building directory
+    mkdir -p /opt/build/ && chown -R builduser:builduser /opt/build/
 
 COPY entrypoint.bash /usr/local/bin/build-entrypoint.bash
 USER builduser
