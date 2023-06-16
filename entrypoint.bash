@@ -179,6 +179,6 @@ else
         if [ "$PACKAGE_OS" = "true" ]; then
             source package_os.sh "${device_array[i]}"
         fi
-
+        
     done
 fi

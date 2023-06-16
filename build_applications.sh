@@ -11,13 +11,13 @@ else
 fi
 
 for APP in "${apps_array[@]}"; do
-    mkdir -p /opt/build/apps/"${APP}"
-    cd /opt/build/apps/"${APP}"
+    mkdir -p /opt/build/apps/
+    cd /opt/build/apps/
 
     clone_repository() {
         local app_dir="$1"
         local repo_url="https://github.com/GrapheneOS/${app_dir}.git"
-        git clone "$repo_url"
+        git clone "$repo_url" 
         cd "$app_dir"
     }
 
