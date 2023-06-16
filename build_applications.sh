@@ -3,11 +3,6 @@
 MANIFEST=$1
 APPS_TO_BUILD=$2
 
-# If we don't detect the SDK installation and if we have a set manifest
-if [[ ! -d "$HOME/android/sdk" && $MANIFEST != "development" ]]; then
-    install_android_sdk
-fi
-
 # Download and build the applications
 if [ "$APPS_TO_BUILD" != "all" ]; then
     IFS=" " read -r -a apps_array <<< "$APPS_TO_BUILD"

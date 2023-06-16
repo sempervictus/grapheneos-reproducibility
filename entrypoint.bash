@@ -10,6 +10,7 @@ BUILD_NUMBER="${BUILD_NUMBER:-""}"
 BUILD_DATETIME="${BUILD_DATETIME:-""}"
 BUILD_ID="${BUILD_ID:-""}"
 USE_PREBUILT_KERNEL="${USE_PREBUILT_KERNEL:-false}"
+KERNEL_MANIFEST="${KERNEL_MANIFEST:-""}"
 USE_PREBUILT_APPS="${USE_PREBUILT_APPS:-false}"
 PACKAGE_OS="${PACKAGE_OS:-true}"
 APPS_TO_BUILD="${APPS_TO_BUILD:-all}"
@@ -19,6 +20,7 @@ NPROC_SYNC="${NPROC_SYNC:-8}"
 NPROC_BUILD="${NPROC_BUILD:-8}"
 SKIP_GRAPHENEOS="${SKIP_GRAPHENEOS:-false}"
 BUILD_VANADIUM="${BUILD_VANADIUM:-false}"
+VANADIUM_MANIFEST="${VANADIUM_MANIFEST:-""}"
 GIT_USERNAME="${GIT_USERNAME:-grapheneos}"
 GIT_EMAILADDRESS="${GIT_EMAILADDRESS:-grapheneos-build@localhost}"
 
@@ -58,8 +60,15 @@ check_breaking_env() {
         exit 1
     # TODO: flesh out
     elif [[ $SKIP_GRAPHENEOS == "true" ]]; then
-        echo "Currently unsupported."
-        exit 1
+        if [[ $USE_PREBUILT_KERNEL == "false" && $KERNEL_MANIFEST == "" ]]; then
+            echo "Provide a KERNEL_MANIFEST to build the kernel from"
+            exit 1
+        fi
+
+        if [[ $BUILD_VANADIUM == "false" && $VANADIUM_MANIFEST == "" ]]; then
+            echo "Provide a VANADIUM_MANIFEST to build Vanadium from"
+            exit 1
+        fi
     # If we are going for a reproducible build...
     elif [[ $OFFICIAL_BUILD == "true" ]]; then
         # If a local_manifest directory exists...
@@ -126,29 +135,50 @@ get_metadata () {
 
 check_breaking_env
 
-for ((i = 0; i < ${#device_array[@]}; i++)); do
+if [[ $SKIP_GRAPHENEOS == "true" ]]; then
+    for ((i = 0; i < ${#device_array[@]}; i++)); do 
+        if [[ "$USE_PREBUILT_KERNEL" == "false" ]]; then
+            echo "[INFO] Building Kernel for "${device_array[i]}" with tag ${KERNEL_MANIFEST}"
+            source build_kernel.sh "${device_array[i]}" $KERNEL_MANIFEST
+        fi
 
-    # This is for the case of "I have a BUILD_NUMBER, BUILD_DATETIME and BUILD_ID and I don't want to check against MANIFESTS_TO_BUILD or a BUILD_TARGET".
-    if [[ -z $BUILD_TARGET && -z $MANIFESTS_FOR_BUILD ]]; then
-        source compile_os.sh "${device_array[i]}" "$BUILD_ID" "${BUILD_ID}.${BUILD_NUMBER}"
-    fi
+        if [[ "$USE_PREBUILT_APPS" == "false" ]]; then
+            echo "[INFO] Installing SDKManager"
+            source install_sdk.sh
+            echo "[INFO] Building applications"
+            source build_applications.sh "development" $APPS_TO_BUILD
+        fi
 
-    case $BUILD_TARGET in
-        stable|beta|alpha|testing)
-            get_metadata "${device_array[i]}" "$BUILD_TARGET"
-            source compile_os.sh "${device_array[i]}" "$BUILD_ID" "$MANIFEST_FROM_METADATA"
-            ;;
-        development)
-            source compile_os.sh "${device_array[i]}" "$BUILD_ID" "development"
-            ;;
-        *)
-            BUILD_ID=$(echo "${manifest_array[i]}" | cut -d'.' -f1-3)
-            source compile_os.sh "${device_array[i]}" "$BUILD_ID" "${manifest_array[i]}"
-            ;;
-    esac
+        if [ "$BUILD_VANADIUM" = "true" ]; then
+            echo "[INFO] Building Vanadium"
+            source build_vanadium.sh $VANADIUM_MANIFEST
+        fi
+    done
+else 
+    for ((i = 0; i < ${#device_array[@]}; i++)); do
 
-    if [ "$PACKAGE_OS" = "true" ]; then
-        source package_os.sh "${device_array[i]}"
-    fi
+        # This is for the case of "I have a BUILD_NUMBER, BUILD_DATETIME and BUILD_ID and I don't want to check against MANIFESTS_TO_BUILD or a BUILD_TARGET".
+        if [[ -z $BUILD_TARGET && -z $MANIFESTS_FOR_BUILD ]]; then
+            source compile_os.sh "${device_array[i]}" "$BUILD_ID" "${BUILD_ID}.${BUILD_NUMBER}"
+        fi
 
-done
+        case $BUILD_TARGET in
+            stable|beta|alpha|testing)
+                get_metadata "${device_array[i]}" "$BUILD_TARGET"
+                source compile_os.sh "${device_array[i]}" "$BUILD_ID" "$MANIFEST_FROM_METADATA"
+                ;;
+            development)
+                source compile_os.sh "${device_array[i]}" "$BUILD_ID" "development"
+                ;;
+            *)
+                BUILD_ID=$(echo "${manifest_array[i]}" | cut -d'.' -f1-3)
+                source compile_os.sh "${device_array[i]}" "$BUILD_ID" "${manifest_array[i]}"
+                ;;
+        esac
+
+        if [ "$PACKAGE_OS" = "true" ]; then
+            source package_os.sh "${device_array[i]}"
+        fi
+
+    done
+fi
