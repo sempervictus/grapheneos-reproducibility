@@ -329,8 +329,10 @@ build_kernel () {
 }
 
 build_applications () {
-    # If we don't detect the SDK installation
-    if [[ ! -d "$HOME/android/sdk" ]]
+    MANIFEST=$1
+
+    # If we don't detect the SDK installation and if we have a set manifest
+    if [[ ! -d "$HOME/android/sdk" && $MANIFEST != "development" ]]; then
         install_android_sdk
     fi
 
@@ -342,12 +344,6 @@ build_applications () {
     fi
 
     for APP in "${apps_array[@]}"; do
-        if [ $APP != "GmsCompat" ]; then
-            VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}.apk" | grep -oP "versionCode='\K\d+")
-        else 
-            VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}Config.apk" | grep -oP "versionCode='\K\d+")
-        fi
-
         mkdir -p /opt/build/apps/"${APP}"
         cd /opt/build/apps/"${APP}"
 
@@ -364,20 +360,22 @@ build_applications () {
             clone_repository "$APP"
         fi
 
-        # If BUILD_TARGET exists, build newest
-        if [[ ! -z "$BUILD_TARGET" ]]; then
+        # If MANIFEST is development, build newest
+        if [[ $MANIFEST == "development" ]]; then
             if [ "$APP" = "GmsCompat" ]; then
                 git checkout tags/"$(git describe --tags --abbrev=0)"
                 cd config-holder/
             else
                 git checkout tags/"$(git describe --tags --abbrev=0)"
             fi
-        # If MANIFESTS_FOR_BUILD or BUILD_NUMBER exists, use the prebuilt APK's versionCode and checkout the tag related
-        elif [[ ! -z "$MANIFESTS_FOR_BUILD" || ! -z "$BUILD_NUMBER" ]]; then
+        # If not, use the prebuilt APK's versionCode and checkout the tag related
+        else [[ ! -z "$MANIFESTS_FOR_BUILD" || ! -z "$BUILD_NUMBER" ]]; then
             if [ "$APP" = "GmsCompat" ]; then
+                VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}Config.apk" | grep -oP "versionCode='\K\d+")
                 git checkout tags/"${VERSION_CODE}"
                 cd config-holder/
             else
+                VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}.apk" | grep -oP "versionCode='\K\d+")
                 git checkout tags/"${VERSION_CODE}"
             fi
         fi
