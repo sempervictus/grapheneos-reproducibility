@@ -1,10 +1,6 @@
-MANIFEST=$1
+#!/bin/bash
 
-# If we don't detect the SDK installation and if we have a set manifest
-if [[ ! -d "$HOME/android/sdk" && $MANIFEST != "development" ]]; then
-    install_android_sdk
-    VERSION_CODE=$(aapt2 dump badging "external/vanadium/prebuilt/arm64/TrichromeChrome.apk" | grep -oP "versionName='\K\d+")
-fi
+MANIFEST=$1
 
 # Set build trees
 mkdir -p /opt/build/vanadium /opt/build/depot_tools /opt/build/chromium

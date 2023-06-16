@@ -1,3 +1,5 @@
+#!/bin/bash
+
 MANIFEST=$1
 APPS_TO_BUILD=$2
 

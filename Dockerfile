@@ -17,8 +17,8 @@ RUN pacman -Syyuu --noconfirm repo python git gnupg diffutils freetype2 jdk17-op
     # Create our building directory
     mkdir -p /opt/build/ && chown -R builduser:builduser /opt/build/
 
-COPY entrypoint.bash /usr/local/bin/build-entrypoint.bash
+COPY . /usr/local/bin/
 USER builduser
 
 WORKDIR /opt/build/
-ENTRYPOINT ["/usr/local/bin/build-entrypoint.bash"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.bash"]

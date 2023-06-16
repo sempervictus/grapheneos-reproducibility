@@ -1,4 +1,7 @@
+#!/bin/bash
+
 DEVICE=$1
+
 # https://github.com/GrapheneOS/platform_development.git 
 # Currently, the plan is to include your own made keys. This is here just in case we decide to do this on the fly which will definitely not be recommended at all.
 # Packaging also signs the OS as well. 

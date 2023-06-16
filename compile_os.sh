@@ -1,3 +1,5 @@
+#!/bin/bash
+
 DEVICE=$1
 BUILD_ID=$2
 MANIFEST=$3
@@ -77,17 +79,17 @@ vendor/adevtool/bin/run ota-firmware vendor/adevtool/config/$DEVICE.yml -f vendo
 
 if [ "$USE_PREBUILT_KERNEL" = "false" ]; then
     echo "[INFO] Building Kernel for ${DEVICE} with tag ${MANIFEST}"
-    build_kernel $DEVICE $MANIFEST
+    source build_kernel.sh $DEVICE $MANIFEST
 fi
 
 if [ "$USE_PREBUILT_APPS" = "false" ]; then
     echo "[INFO] Building applications for ${DEVICE}"
-    build_applications
+    source build_applications.sh $MANIFEST $APPS_TO_BUILD
 fi
 
 if [ "$BUILD_VANADIUM" = "true" ]; then
     echo "[INFO] Building Vanadium"
-    build_vanadium $MANIFEST
+    source build_vanadium.sh $MANIFEST
 fi
 
 echo "[INFO] Building OS"
@@ -100,6 +102,6 @@ if [ "$DEVICE" = "oriole" || "$DEVICE" = "raven" || "$DEVICE" = "bluejay" ]; the
 elif [ "$DEVICE" = "panther" || "$DEVICE" = "cheetah" || "$DEVICE" = "lynx" ]; then
     m vendorbootimage vendorkernelbootimage target-files-package otatools-package -j${NPROC_BUILD}
 else
-        m target-files-package otatools-package -j${NPROC_BUILD}
+    m target-files-package otatools-package -j${NPROC_BUILD}
 fi
 echo "[INFO] OS built"

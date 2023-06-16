@@ -1,3 +1,5 @@
+#!/bin/bash
+
 mkdir -p "$HOME/android/sdk/bootstrap" "$HOME/android/sdk/licenses"
 cd "$HOME/android/sdk/bootstrap"
 curl -O https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
