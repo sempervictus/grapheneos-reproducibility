@@ -1,0 +1,12 @@
+services:
+  vanadium-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vanadium-builder
+    privileged: true
+    # These are the bare minimum to build Vanadium
+    environment:
+      - VANADIUM_MANIFEST=""
+    volumes:
+      - ./grapheneos-vanadium/:/opt/build/vanadium
