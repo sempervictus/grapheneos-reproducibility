@@ -66,7 +66,7 @@ for APP in "${apps_array[@]}"; do
         fi
     else 
         if [[ $APP == "GmsCompat" ]]; then
-            rsync -av "/opt/build/apps/GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/grapheneos/external/$APP/prebuilt/${APP}Config.apk"
+            rsync -av "/opt/build/apps/GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/grapheneos/external/${APP}Config/prebuilt/${APP}Config.apk"
         elif [[ $APP == "TalkBack" ]]; then
             rsync -av "/opt/build/apps/TalkBack/build/outputs/apk/phone/release/TalkBack-phone-release-unsigned.apk" "/opt/build/grapheneos/external/$APP/prebuilt/talkback.apk"
         else 
