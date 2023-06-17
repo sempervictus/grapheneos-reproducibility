@@ -55,7 +55,6 @@ for APP in "${apps_array[@]}"; do
 
     ./gradlew build
 
-    # TODO: export the built application to external/$APP/prebuilt/$APP.apk
     if [[ $SKIP_GRAPHENEOS == "true" ]]; then
         if [[ $APP == "GmsCompat" ]]; then
             rsync -av "/opt/build/apps/GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/compiled_apps/$APP/${APP}Config.apk"
