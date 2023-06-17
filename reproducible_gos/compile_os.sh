@@ -7,23 +7,12 @@ MANIFEST=$3
 echo "Device we are building for: $DEVICE"
 echo "Stock Build ID associated with the device: $BUILD_ID"
 echo "Manifest from GrapheneOS to build from: $MANIFEST"
-echo
 echo "OFFICIAL_BUILD status: $OFFICIAL_BUILD"
 if [ "$OFFICIAL_BUILD" = "true" ]; then
     echo "BUILD_DATETIME is set to: $BUILD_DATETIME"
     echo "BUILD_NUMBER is set to: $BUILD_NUMBER"
     echo "BUILD_ID is set to: $BUILD_ID"
 fi
-echo "Are we using the AOSP Test Keys: $USE_AOSP_TEST_KEYS"
-echo
-echo "Are we using the prebuilt kernel: $USE_PREBUILT_KERNEL"
-echo "Are we using the prebuilt applications: $USE_PREBUILT_APPS"
-if [ "$APPS_TO_BUILD" != "all" ]; then
-    IFS=" " read -r -a apps_array <<< "$APPS_TO_BUILD"
-    echo "We are building the following apps: $apps_array"
-fi
-echo "Are we building Vanadium: $BUILD_VANADIUM"
-echo
 echo "NPROC Sync Count: $NPROC_SYNC"
 echo "NPROC Build Count: $NPROC_BUILD"
 
