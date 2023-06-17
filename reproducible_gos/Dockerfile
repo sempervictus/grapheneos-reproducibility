@@ -22,6 +22,7 @@ RUN pacman -Syyuu --noconfirm repo python git gnupg diffutils freetype2 jdk17-op
     /usr/local/bin/compile_os.sh /usr/local/bin/build_vanadium.sh /usr/local/bin/build_kernel.sh \
     /usr/local/bin/build_applications.sh
 
+ENV OFFICIAL_BUILD=true
 USER builduser
 
 WORKDIR /opt/build/
