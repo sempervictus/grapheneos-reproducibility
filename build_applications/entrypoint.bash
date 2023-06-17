@@ -4,6 +4,7 @@ set -o errexit -o pipefail
 
 # Set default values 
 APPS_TO_BUILD="${APPS_TO_BUILD:-all}"
+MANIFEST="${MANIFEST:-"latest"}"
 GIT_USERNAME="${GIT_USERNAME:-grapheneos}"
 GIT_EMAILADDRESS="${GIT_EMAILADDRESS:-grapheneos-build@localhost}"
 
@@ -38,4 +39,4 @@ check_breaking_env() {
 check_breaking_env
 
 source install_sdk.sh
-source build_applications.sh "development"
+source build_applications.sh $MANIFEST
