@@ -27,18 +27,23 @@ for APP in "${apps_array[@]}"; do
         clone_repository "$APP"
     fi
 
-    # If MANIFEST is development, build newest straight from Github
+    # If MANIFEST is development, build newest
     if [[ $MANIFEST == "development" ]]; then
-        if [ "$APP" = "GmsCompat" ]; then
-            cd config-holder/
-        fi
-    # If MANIFEST is latest, build the latest tag
-    elif [[ $MANIFEST == "latest" ]]; then
         if [ "$APP" = "GmsCompat" ]; then
             git checkout tags/"$(git describe --tags --abbrev=0)"
             cd config-holder/
         elif [[ "$APP" != "TalkBack" && "$APP" != "PdfViewer" ]]; then
             git checkout tags/"$(git describe --tags --abbrev=0)"
+        fi
+    # If not, use the prebuilt APK's versionCode and checkout the tag related
+    else
+        if [ "$APP" = "GmsCompat" ]; then
+            VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}Config.apk" | grep -oP "versionCode='\K\d+")
+            git checkout tags/"${VERSION_CODE}"
+            cd config-holder/
+        elif [ "$APP" != "TalkBack" ]; then
+            VERSION_CODE=$(aapt2 dump badging "external/${APP}/prebuilt/${APP}.apk" | grep -oP "versionCode='\K\d+")
+            git checkout tags/"${VERSION_CODE}"
         fi
     fi
 

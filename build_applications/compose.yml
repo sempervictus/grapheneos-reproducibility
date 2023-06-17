@@ -7,8 +7,7 @@ services:
     privileged: true
     # These are the bare minimum to build the applications
     environment:
-      - APPS_TO_BUILD=all
-      - MANIFEST=latest
+      - APPS_TO_BUILD="GmsCompat"
     volumes:
       - ./grapheneos-apps/:/opt/build/apps
       - ./grapheneos-compiled-apps/:/opt/build/compiled_apps
