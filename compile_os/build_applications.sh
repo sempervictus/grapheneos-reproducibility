@@ -47,6 +47,12 @@ for APP in "${apps_array[@]}"; do
         fi
     fi
 
+    if [[ $APP == "PdfViewer" && -f "package.json" ]]; then
+        npm install
+    else
+        git submodule update --init --recursive
+    fi
+
     GRADLE_VERSION=$(awk -F'/' '/^distributionUrl=/ {print $NF}' gradle/wrapper/gradle-wrapper.properties | cut -d'-' -f2)
     GRADLE_CHECKSUM=$(awk -F'=' '/^distributionSha256Sum=/ {print $NF}' gradle/wrapper/gradle-wrapper.properties)
 
@@ -57,7 +63,7 @@ for APP in "${apps_array[@]}"; do
 
     if [[ $SKIP_GRAPHENEOS == "true" ]]; then
         if [[ $APP == "GmsCompat" ]]; then
-            rsync -av "/opt/build/apps/GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/compiled_apps/$APP/${APP}Config.apk"
+            rsync -av "/opt/build/apps/platform_packages_apps_GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/compiled_apps/$APP/${APP}Config.apk"
         elif [[ $APP == "TalkBack" ]]; then
             rsync -av "/opt/build/apps/TalkBack/build/outputs/apk/phone/release/TalkBack-phone-release-unsigned.apk" "/opt/build/compiled_apps/$APP/talkback.apk"
         else 
@@ -65,7 +71,7 @@ for APP in "${apps_array[@]}"; do
         fi
     else 
         if [[ $APP == "GmsCompat" ]]; then
-            rsync -av "/opt/build/apps/GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/grapheneos/external/${APP}Config/prebuilt/${APP}Config.apk"
+            rsync -av "/opt/build/apps/platform_packages_apps_GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/grapheneos/external/${APP}Config/prebuilt/${APP}Config.apk"
         elif [[ $APP == "TalkBack" ]]; then
             rsync -av "/opt/build/apps/TalkBack/build/outputs/apk/phone/release/TalkBack-phone-release-unsigned.apk" "/opt/build/grapheneos/external/$APP/prebuilt/talkback.apk"
         else 
