@@ -22,7 +22,7 @@ for APP in "${apps_array[@]}"; do
     }
 
     if [ "$APP" = "GmsCompat" ]; then
-        clone_repository "platform_packages_apps_GmsCompat"
+        clone_repository "platform_packages_apps_GmsCompat" 
     else
         clone_repository "$APP"
     fi
@@ -37,9 +37,15 @@ for APP in "${apps_array[@]}"; do
         if [ "$APP" = "GmsCompat" ]; then
             git checkout tags/"$(git describe --tags --abbrev=0)"
             cd config-holder/
-        elif [[ "$APP" != "TalkBack" && "$APP" != "PdfViewer" ]]; then
+        elif [[ "$APP" != "TalkBack" ]]; then
             git checkout tags/"$(git describe --tags --abbrev=0)"
         fi
+    fi
+
+    if [[ $APP == "PdfViewer" && -f "package.json" ]]; then
+        npm install
+    else
+        git submodule update --init --recursive
     fi
 
     GRADLE_VERSION=$(awk -F'/' '/^distributionUrl=/ {print $NF}' gradle/wrapper/gradle-wrapper.properties | cut -d'-' -f2)
@@ -51,7 +57,7 @@ for APP in "${apps_array[@]}"; do
     ./gradlew build
 
     if [[ $APP == "GmsCompat" ]]; then
-        rsync -av "/opt/build/apps/GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/compiled_apps/$APP/${APP}Config.apk"
+        rsync -av "/opt/build/apps/platform_packages_apps_GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/compiled_apps/$APP/${APP}Config.apk"
     elif [[ $APP == "TalkBack" ]]; then
         rsync -av "/opt/build/apps/TalkBack/build/outputs/apk/phone/release/TalkBack-phone-release-unsigned.apk" "/opt/build/compiled_apps/$APP/talkback.apk"
     else 

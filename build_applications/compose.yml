@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: application-builder
-    privileged: true
     # These are the bare minimum to build the applications
     environment:
       - APPS_TO_BUILD=all
