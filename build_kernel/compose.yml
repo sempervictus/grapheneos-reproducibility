@@ -12,3 +12,4 @@ services:
       - NPROC_SYNC=8
     volumes:
       - ./grapheneos-kernel/:/opt/build/kernel
+      - ./grapheneos-compiled-kernel:/opt/build/compiled_kernel

@@ -3,8 +3,7 @@ FROM archlinux:latest
 COPY . /usr/local/bin/
 
 # Obtain all needed packages from Arch Linux repos
-RUN pacman -Sy --noconfirm repo python git freetype2 \ 
-    fontconfig ttf-dejavu openssl rsync unzip zip \
+RUN pacman -Sy --noconfirm repo python git openssl rsync unzip zip \
     gperf lib32-glibc lib32-gcc-libs openssh base-devel make cpio parallel && \
     # Create our building directory
     mkdir -p /opt/build/ && chmod a+x /usr/local/bin/entrypoint.bash /usr/local/bin/build_kernel.sh
