@@ -8,7 +8,7 @@ If you are using `docker run`, use this template.
 # Build the container
 docker build -t kernel-builder .
 # Run the container
-docker run --privileged -e "DEVICES_TO_BUILD=coral" -e "MANIFESTS_FOR_BUILD=TQ3A.230605.012.2023061402" -v "./grapheneos-kernel/:/opt/build/kernel" -v "./grapheneos-compiled-kernel/:/opt/build/compiled_kernel" kernel-builder
+docker run -e "DEVICES_TO_BUILD=coral" -e "MANIFESTS_FOR_BUILD=TQ3A.230605.012.2023061402" -v "./grapheneos-kernel/:/opt/build/kernel" -v "./grapheneos-compiled-kernel/:/opt/build/compiled_kernel" kernel-builder
 ```
 
 If you are using `docker compose`, use this template.
@@ -20,7 +20,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: kernel-builder
-    privileged: true
     # These are the bare minimum to build the kernel
     environment:
       - DEVICES_TO_BUILD="coral"

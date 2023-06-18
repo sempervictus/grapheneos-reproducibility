@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: kernel-builder
-    privileged: true
     # These are the bare minimum to build the kernel
     environment:
       - DEVICES_TO_BUILD="coral"
