@@ -30,16 +30,22 @@ for APP in "${apps_array[@]}"; do
         git checkout tags/"${VERSION_CODE}"
     fi
 
+    if [[ $APP == "PdfViewer" && -f "package.json" ]]; then
+        npm install
+    else
+        git submodule update --init --recursive
+    fi
+
     GRADLE_VERSION=$(awk -F'/' '/^distributionUrl=/ {print $NF}' gradle/wrapper/gradle-wrapper.properties | cut -d'-' -f2)
     GRADLE_CHECKSUM=$(awk -F'=' '/^distributionSha256Sum=/ {print $NF}' gradle/wrapper/gradle-wrapper.properties)
 
     ./gradlew wrapper --gradle-version="$GRADLE_VERSION" --gradle-distribution-sha256-sum="$GRADLE_CHECKSUM"
     ./gradlew wrapper --gradle-version="$GRADLE_VERSION" --gradle-distribution-sha256-sum="$GRADLE_CHECKSUM"
-
+    
     ./gradlew build
 
     if [[ $APP == "GmsCompat" ]]; then
-        rsync -av "/opt/build/apps/GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/grapheneos/external/${APP}Config/prebuilt/${APP}Config.apk"
+        rsync -av "/opt/build/apps/platform_packages_apps_GmsCompat/config-holder/app/build/outputs/apk/release/app-release-unsigned.apk" "/opt/build/grapheneos/external/${APP}Config/prebuilt/${APP}Config.apk"
     elif [[ $APP == "TalkBack" ]]; then
         rsync -av "/opt/build/apps/TalkBack/build/outputs/apk/phone/release/TalkBack-phone-release-unsigned.apk" "/opt/build/grapheneos/external/$APP/prebuilt/talkback.apk"
     else 
